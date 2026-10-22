@@ -1,0 +1,11 @@
+# Normalize line endings on checkout
+* text=auto
+
+# Force CRLF for Windows scripts
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+*.vbs   text eol=crlf
+
+# Binary files
+*.exe   binary

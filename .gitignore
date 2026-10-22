@@ -1,0 +1,6 @@
+*.tmp
+*.exe
+*.log
+
+# Launcher build output
+build/
