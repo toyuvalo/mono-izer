@@ -1,4 +1,6 @@
-// MonoIzerLauncher.cs -- MonoIzer.exe, the right-click entry point (v1.0.0)
+// MonoIzerLauncher.cs -- MonoIzer.exe, the right-click entry point (v1.1.0)
+// Usage: MonoIzer.exe "<file>"          -> mono (left channel)
+//        MonoIzer.exe --split "<file>"  -> split L / R (one prefix dialog per batch)
 // A compiled launcher instead of a VBScript that starts hidden PowerShell:
 // antivirus flags that chain. Same logic as Shrink Menu's launcher:
 //   1. Explorer starts one instance per selected file; a lock file lets only the
@@ -21,17 +23,19 @@ using System.Threading;
 [assembly: AssemblyProduct("mono-izer")]
 [assembly: AssemblyCompany("DVLCE")]
 [assembly: AssemblyCopyright("MIT with Commons Clause")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 static class MonoIzerLauncher
 {
     [STAThread]
     static int Main(string[] args)
     {
-        string rightClicked = args.Length > 0 ? args[0] : "";
+        bool split = args.Length > 0 && args[0] == "--split";
+        string rightClicked = args.Length > (split ? 1 : 0) ? args[split ? 1 : 0] : "";
         string tempDir = Path.GetTempPath();
-        string lockFile = Path.Combine(tempDir, "mono_izer.lock");
+        // One lock per mode, so a mono batch and a split batch do not swallow each other.
+        string lockFile = Path.Combine(tempDir, split ? "mono_izer_split.lock" : "mono_izer.lock");
 
         try
         {
@@ -62,7 +66,7 @@ static class MonoIzerLauncher
         string listFile = Path.Combine(tempDir, "mono_izer_" + Guid.NewGuid().ToString("N") + ".txt");
         File.WriteAllLines(listFile, files.ToArray(), new UTF8Encoding(true));
 
-        StartScript("-ListFile \"" + listFile + "\"");
+        StartScript("-ListFile \"" + listFile + "\"" + (split ? " -Mode Split" : ""));
         return 0;
     }
 

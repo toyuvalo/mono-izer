@@ -1,9 +1,9 @@
-; MonoIzer.iss -- Inno Setup script for MonoIzer-Install.exe (v1.0.0)
+; MonoIzer.iss -- Inno Setup script for MonoIzer-Install.exe (v1.1.0)
 ; Runs no scripts: it copies files and writes the HKCU context-menu keys itself.
 ; When ffmpeg is not on the PATH, it downloads it (dvlce-deps.iss).
 ; Build: build.cmd (needs Inno Setup 6, ISCC.exe).
 
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 #define AppGuid "2E023C08-71B2-4D88-B055-1FFD43B4BB7E"
 #define NeedFFmpeg
 
@@ -44,13 +44,26 @@ Source: "..\mono-izer.ico"; DestDir: "{app}"; Flags: ignoreversion
 [UninstallDelete]
 Type: files; Name: "{app}\mono-izer.log"
 
+[Registry]
+; The remembered split prefixes.
+Root: HKCU; Subkey: "Software\MonoIzer"; Flags: uninsdeletekey
+
+; A cascading submenu: mono-izer > Make mono (left channel) / Split L / R...
+; The first line deletes the whole key, so an upgrade from v1.0.0 (a single verb
+; with its own command) leaves exactly one menu. Subverbs list alphabetically.
 #define MenuKey(Ext) "Software\Classes\SystemFileAssociations\" + Ext + "\shell\MonoIzer"
+#define Verb(Ext, Name, Label, Args) \
+  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '\shell\' + Name + '"; ValueType: string; ValueName: ""; ValueData: "' + Label + '"' + NewLine + \
+  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '\shell\' + Name + '"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"' + NewLine + \
+  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '\shell\' + Name + '\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonoIzer.exe"" ' + Args + '""%1"""' + NewLine
 #define Entry(Ext) \
   'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: none; Flags: deletekey' + NewLine + \
-  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: string; ValueName: ""; ValueData: "mono-izer"; Flags: uninsdeletekey' + NewLine + \
+  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: string; ValueName: "MUIVerb"; ValueData: "mono-izer"; Flags: uninsdeletekey' + NewLine + \
+  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: string; ValueName: "SubCommands"; ValueData: ""' + NewLine + \
   'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\mono-izer.ico,0"' + NewLine + \
   'Root: HKCU; Subkey: "' + MenuKey(Ext) + '"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"' + NewLine + \
-  'Root: HKCU; Subkey: "' + MenuKey(Ext) + '\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonoIzer.exe"" ""%1"""' + NewLine
+  Verb(Ext, "mono", "Make mono (left channel)", "") + \
+  Verb(Ext, "split", "Split L / R...", "--split ")
 
 [Registry]
 #emit Entry(".wav")

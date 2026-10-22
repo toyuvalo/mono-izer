@@ -10,5 +10,8 @@ foreach ($ext in '.wav', '.mp3') {
     }
 }
 
+# The remembered split prefixes.
+if (Test-Path "HKCU:\Software\MonoIzer") { Remove-Item -Path "HKCU:\Software\MonoIzer" -Recurse -Force -ErrorAction SilentlyContinue }
+
 Write-Host "Removed $removed registry entries." -ForegroundColor Green
 Read-Host "Press Enter to close"

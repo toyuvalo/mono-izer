@@ -35,21 +35,32 @@ if ((Get-Command ffmpeg -ErrorAction SilentlyContinue) -and (Get-Command ffprobe
 
 $icoPath  = Join-Path $PSScriptRoot "mono-izer.ico"
 $menuIcon = if (Test-Path $icoPath) { "$icoPath,0" } else { "shell32.dll,168" }
-$cmd      = "`"$launcherPath`" `"%1`""
 
+# A cascading submenu: mono-izer > Make mono (left channel) / Split L / R...
+$verbs = @(
+    @{ Name = 'mono';  Label = 'Make mono (left channel)'; Cmd = "`"$launcherPath`" `"%1`"" },
+    @{ Name = 'split'; Label = 'Split L / R...';           Cmd = "`"$launcherPath`" --split `"%1`"" }
+)
 foreach ($ext in '.wav', '.mp3') {
     $regPath = "HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\MonoIzer"
+    # Delete first: v1.0.0 was a single verb with its own command key.
     if (Test-Path $regPath) { Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue }
     New-Item -Path $regPath -Force | Out-Null
-    Set-ItemProperty -Path $regPath -Name "(Default)"        -Value "mono-izer"
+    Set-ItemProperty -Path $regPath -Name "MUIVerb"          -Value "mono-izer"
+    Set-ItemProperty -Path $regPath -Name "SubCommands"      -Value ""
     Set-ItemProperty -Path $regPath -Name "Icon"             -Value $menuIcon
     Set-ItemProperty -Path $regPath -Name "MultiSelectModel" -Value "Player"
-    New-Item -Path "$regPath\command" -Force | Out-Null
-    Set-ItemProperty -Path "$regPath\command" -Name "(Default)" -Value $cmd
+    foreach ($v in $verbs) {
+        $verbPath = "$regPath\shell\$($v.Name)"
+        New-Item -Path "$verbPath\command" -Force | Out-Null
+        Set-ItemProperty -Path $verbPath -Name "(Default)"        -Value $v.Label
+        Set-ItemProperty -Path $verbPath -Name "MultiSelectModel" -Value "Player"
+        Set-ItemProperty -Path "$verbPath\command" -Name "(Default)" -Value $v.Cmd
+    }
 }
 
 Write-Host "  Registered .wav and .mp3" -ForegroundColor Green
 Write-Host ""
-Write-Host "Right-click a stereo .wav or .mp3 and pick 'mono-izer'." -ForegroundColor White
+Write-Host "Right-click a stereo .wav or .mp3 and open 'mono-izer'." -ForegroundColor White
 Write-Host ""
 Read-Host "Press Enter to close"
